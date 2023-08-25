@@ -7,7 +7,7 @@
 
 #include "matrix.h"
 
-#define ATG_ENABLE_SPM_HACK 1
+#define ATG_ENABLE_SPM_HACK 0
 
 namespace atg_scs {
     class Matrix;
