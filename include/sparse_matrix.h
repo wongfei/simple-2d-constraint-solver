@@ -5,8 +5,101 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "matrix.h"
+
+#define ATG_ENABLE_SPM_HACK 1
+
 namespace atg_scs {
     class Matrix;
+
+    #if ATG_ENABLE_SPM_HACK
+
+    class SparseMatrixBase {
+        public:
+            inline SparseMatrixBase() {
+                m_matrix = nullptr;
+                m_data = nullptr;
+                m_blockData = nullptr;
+                m_width = m_height = 0;
+                m_capacityHeight = 0;
+            }
+
+            inline ~SparseMatrixBase() {
+                assert(m_matrix == nullptr);
+                assert(m_data == nullptr);
+                assert(m_blockData == nullptr);
+            }
+
+            void initialize(int width, int height);
+            void resize(int width, int height);
+            void destroy();
+
+            void expand(Matrix* matrix);
+            void expandTransposed(Matrix* matrix);
+            void multiplyTranspose(const SparseMatrixBase& b_T, Matrix* target) const;
+            void transposeMultiplyVector(Matrix& b, Matrix* target) const;
+            void multiply(Matrix& b, Matrix* target) const;
+            void rightScale(Matrix& scale, SparseMatrixBase* target);
+            void leftScale(Matrix& scale, SparseMatrixBase* target);
+
+            inline void setBlock(int row, int entry, uint8_t index) {
+	            assert(row >= 0 && row < m_height);
+	            assert(entry >= 0 && entry < T_Entries);
+	            assert(index < m_width);
+
+	            m_blockData[row * T_Entries + entry] = index;
+            }
+
+            inline void set(int row, int entry, int slice, double v) {
+	            assert(row >= 0 && row < m_height);
+	            assert(entry >= 0 && entry < T_Entries);
+	            assert(slice < T_Stride);
+
+	            m_matrix[row][entry * T_Stride + slice] = v;
+            }
+
+            inline double get(int row, int entry, int slice) {
+	            assert(row >= 0 && row < m_height);
+	            assert(entry >= 0 && entry < T_Entries);
+	            assert(slice < T_Stride);
+
+	            return m_matrix[row][entry * T_Stride + slice];
+            }
+
+            inline void setEmpty(int row, int col) {
+	            assert(row >= 0 && row < m_height);
+	            assert(col >= 0 && col < T_Entries);
+
+	            m_blockData[row * T_Entries + col] = 0xFF;
+	            for (int i = 0; i < T_Stride; ++i) {
+		            m_matrix[row][col * T_Stride + i] = 0;
+	            }
+            }
+
+            __forceinline int getWidth() const { return m_width; }
+            __forceinline int getHeight() const { return m_height; }
+
+        protected:
+            double **m_matrix;
+            double *m_data;
+            uint8_t *m_blockData;
+
+            int T_Stride = 3;
+            int T_Entries = 2;
+            int m_width;
+            int m_height;
+            int m_capacityHeight;
+    };
+
+    template <int Stride = 3, int Entries = 2>
+    class SparseMatrix : public SparseMatrixBase {
+    public:
+        inline SparseMatrix() { T_Stride = Stride, T_Entries = Entries; }
+    };
+
+    #else
+
+    // orig code
 
     template <int T_Stride = 3, int T_Entries = 2>
     class SparseMatrix {
@@ -273,6 +366,9 @@ namespace atg_scs {
             int m_height;
             int m_capacityHeight;
     };
+
+    #endif
+
 } /* namespace atg_scs */
 
 #endif /* ATG_SIMPLE_2D_CONSTRAINT_SOLVER_SPARSE_MATRIX_H */

@@ -51,8 +51,13 @@ void atg_scs::Matrix::resize(int width, int height) {
             ? height
             : m_capacityHeight;
 
+        #if ATG_MATRIX_ALIGN
+        m_data = (double*)_aligned_malloc((sizeof(double) * (size_t)m_capacityWidth * (size_t)m_capacityHeight), ATG_MATRIX_ALIGN);
+        m_matrix = (double**)_aligned_malloc((sizeof(double*) * (size_t)m_capacityHeight), ATG_MATRIX_ALIGN);
+        #else
         m_data = new double[(size_t)m_capacityWidth * m_capacityHeight];
         m_matrix = new double *[m_capacityHeight];
+        #endif
     }
 
     m_height = height;
@@ -68,8 +73,13 @@ void atg_scs::Matrix::destroy() {
         return;
     }
 
+    #if ATG_MATRIX_ALIGN
+    _aligned_free(m_matrix);
+    _aligned_free(m_data);
+    #else
     delete[] m_matrix;
     delete[] m_data;
+    #endif
 
     m_matrix = nullptr;
     m_data = nullptr;

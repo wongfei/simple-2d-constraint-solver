@@ -3,6 +3,12 @@
 
 #include <assert.h>
 
+#include <memory>
+#include <cstdlib>
+#include <immintrin.h>
+
+#define ATG_MATRIX_ALIGN 16
+
 namespace atg_scs {
     class Matrix {
         public:
@@ -57,14 +63,18 @@ namespace atg_scs {
             void pmadd(Matrix &b, double s);
 
             void transpose(Matrix *target);
-            int getWidth() const { return m_width; }
-            int getHeight() const { return m_height; }
+
+            __forceinline int getWidth() const { return m_width; }
+            __forceinline int getHeight() const { return m_height; }
 
             __forceinline void fastRowSwap(int a, int b) {
                 double *temp = m_matrix[a];
                 m_matrix[a] = m_matrix[b];
                 m_matrix[b] = temp;
             }
+
+            __forceinline double** getRawMatrix() const { return m_matrix; }
+            __forceinline double* getRawData() const { return m_data; }
 
         protected:
             double **m_matrix;
